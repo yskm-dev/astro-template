@@ -1,0 +1,68 @@
+---
+export interface MetaProps {
+    lang: string,
+    title: string;
+    description?: string;
+    ogImage?: string | ImageMetadata;
+    ogType?: 'website' | 'article';
+}
+
+const {
+    lang = 'ja',
+    title = '',
+    description = '',
+    ogImage,
+    ogType = 'website'
+} = Astro.props as MetaProps; 
+
+const siteUrl = Astro.site;
+if (!siteUrl) {
+  console.warn("astro.config.mjs の 'site' オプションが設定されていません。絶対URLが生成できません。");
+}
+
+const pageUrl = siteUrl ? new URL(Astro.url.pathname, siteUrl).toString() : Astro.url.pathname;
+
+let absoluteOgImageUrl: string | undefined = undefined;
+if (ogImage) {
+  if (typeof ogImage === 'string') {
+    // 文字列パスの場合 (例: '/images/default-ogp.png' や Markdownからの相対パス)
+    // siteUrl があれば絶対URLに、なければそのまま使う (相対パスは機能しない可能性あり)
+    absoluteOgImageUrl = siteUrl ? new URL(ogImage, siteUrl).toString() : ogImage;
+  } else if (typeof ogImage === 'object' && 'src' in ogImage) {
+    // import した画像メタデータの場合 (ImageMetadata)
+    // .src にはビルド後のパスが入るので、絶対URLにする
+    absoluteOgImageUrl = siteUrl ? new URL(ogImage.src, siteUrl).toString() : ogImage.src;
+  }
+} else {
+  // OGP画像が指定されなかった場合のデフォルト画像 (任意)
+  // 例: public/default-ogp.png を用意しておく
+   if (siteUrl) {
+     absoluteOgImageUrl = new URL('/default-ogp.png', siteUrl).toString();
+   }
+}
+
+
+const siteName = "あなたのサイト名";
+const twitterHandle = '';
+---
+
+<head>
+  <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width" />
+  <link rel="icon" href="/favicon.ico" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  {/* OGPタグ */}
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={pageUrl} />
+  <meta property="og:site_name" content={siteName} />
+  <meta property="og:type" content={ogType} />
+  {/* Twitterカードタグ */}
+  <meta name="twitter:card" content="summary_large_image" /> {/* 大きな画像付きカード */}
+  {twitterHandle && <meta name="twitter:site" content={twitterHandle} />}
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  {absoluteOgImageUrl && <meta name="twitter:image" content={absoluteOgImageUrl} />}
+</head>
